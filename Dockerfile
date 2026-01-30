@@ -1,18 +1,15 @@
 FROM python:3.10-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-WORKDIR /app
-
+# Instalamos dependencias necesarias para compilar paquetes si fuera necesario en ARM
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
+WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Comando por defecto (asume que los archivos de config se montarán externamente)
 CMD ["python", "wallamonitor.py"]
