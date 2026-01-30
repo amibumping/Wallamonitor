@@ -2,7 +2,7 @@ import os
 import yaml
 import json
 
-# 1. Generar config.yaml (Corregido a minúsculas para el bot)
+# 1. Generar config.yaml (Claves en minúsculas para el código del bot)
 config_data = {
     "telegram_channel_id": os.getenv("TELEGRAM_CHANNEL_ID", ""),
     "telegram_token": os.getenv("TELEGRAM_TOKEN", "")
@@ -20,7 +20,7 @@ def to_list(env_var):
     except:
         return [val]
 
-# 3. Generar args.json (Siguiendo tu modelo exitoso)
+# 3. Generar args.json (Configuración optimizada)
 args_data = {
     "search_query": os.getenv("SEARCH_QUERY", "laptop"),
     "latitude": os.getenv("LATITUDE", "40.4167"),
@@ -40,4 +40,4 @@ args_data = {
 with open("args.json", "w") as f:
     json.dump([args_data], f, indent=4)
 
-print("✅ Configuración generada (Telegram en minúsculas + Args modo manual).")
+print("✅ Configuración lista.")
