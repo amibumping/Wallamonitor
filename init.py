@@ -2,10 +2,10 @@ import os
 import yaml
 import json
 
-# 1. Generar config.yaml (Claves en minúsculas para el código del bot)
+# 1. Generar config.yaml (Claves EXACTAS requeridas por el bot)
 config_data = {
-    "telegram_channel_id": os.getenv("TELEGRAM_CHANNEL_ID", ""),
-    "telegram_token": os.getenv("TELEGRAM_TOKEN", "")
+    "telegram_token": os.getenv("TELEGRAM_TOKEN", ""),
+    "telegram_channel": os.getenv("TELEGRAM_CHANNEL_ID", "") # Cambiado de _id a seco
 }
 with open("config.yaml", "w") as f:
     yaml.dump(config_data, f)
@@ -20,7 +20,7 @@ def to_list(env_var):
     except:
         return [val]
 
-# 3. Generar args.json (Configuración optimizada)
+# 3. Generar args.json (Configuración modo manual exitoso)
 args_data = {
     "search_query": os.getenv("SEARCH_QUERY", "laptop"),
     "latitude": os.getenv("LATITUDE", "40.4167"),
@@ -40,4 +40,4 @@ args_data = {
 with open("args.json", "w") as f:
     json.dump([args_data], f, indent=4)
 
-print("✅ Configuración lista.")
+print("✅ Configuración generada con claves de Telegram corregidas.")
