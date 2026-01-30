@@ -21,7 +21,7 @@ def to_list(env_var):
         return [val]
 
 # 3. Generar args.json
-# Usamos None para los valores que no queremos enviar
+# Ponemos None explícitamente en lo que no queramos enviar
 args_data = {
     "search_query": os.getenv("SEARCH_QUERY", "laptop"),
     "min_price": int(os.getenv("MIN_PRICE", "0")),
@@ -38,8 +38,7 @@ args_data = {
     "title_first_word_exclude": os.getenv("TITLE_FIRST_WORD_EXCLUDE", None)
 }
 
-args_list = [args_data]
 with open("args.json", "w") as f:
-    json.dump(args_list, f, indent=4)
+    json.dump([args_data], f, indent=4)
 
-print("Configuraciones generadas y parche de URL aplicado.")
+print("Configuración generada. El parche del Dockerfile se encargará del resto.")
