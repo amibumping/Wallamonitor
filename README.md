@@ -23,6 +23,35 @@
 
   ## Configuration 🛠️
 
+  Docker compose example:
+  
+  services:
+  wallamonitor:
+    image: tu-usuario/wallamonitor:latest
+    container_name: wallamonitor
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Madrid
+      # CONFIGURACIÓN TELEGRAM
+      - TELEGRAM_CHANNEL_ID=@TuCanal
+      - TELEGRAM_TOKEN=123456789:ABCDEFG...
+      
+      # PARÁMETROS DE BÚSQUEDA
+      - SEARCH_QUERY=laptop
+      - MIN_PRICE=100
+      - MAX_PRICE=500
+      - MAX_DISTANCE=10
+      - LATITUDE=40.4165
+      - LONGITUDE=-3.70256
+      
+      # EJEMPLO DE LISTAS (Deben ir entre comillas y formato JSON)
+      - TITLE_MUST_INCLUDE=["Intel", "i5"]
+      - DESCRIPTION_EXCLUDE=["averiado", "roto"]
+      
+    volumes:
+      # Único volumen necesario para la base de datos de anuncios vistos
+      - ./datalayer:/app/datalayer
+
   Create an `args.json` file with your search parameters. This file tells Wallamonitor what items you’re looking for, such as price range, condition, and other criteria. You can set multiple search configurations within this file.
   
 
@@ -58,3 +87,4 @@ Check out [args.json](./args.json) for an example
   ---
 
   Feel free to reach out if you have any issues with Wallamonitor or have suggestions to improve it. Happy shopping! 🛒📲
+
