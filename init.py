@@ -13,12 +13,14 @@ with open("config.yaml", "w") as f:
 # 2. Generar args.json
 def to_list(env_var):
     val = os.getenv(env_var)
-    if not val: return None
+    if not val or val.strip() == "": return []
     try:
-        return json.loads(val)
+        parsed = json.loads(val)
+        return parsed if isinstance(parsed, list) else [parsed]
     except:
         return [val]
 
+# Definimos todas las claves que el objeto ItemMonitor requiere obligatoriamente
 args_data = {
     "search_query": os.getenv("SEARCH_QUERY", "laptop"),
     "min_price": int(os.getenv("MIN_PRICE", "0")),
@@ -26,18 +28,16 @@ args_data = {
     "latitude": float(os.getenv("LATITUDE")) if os.getenv("LATITUDE") else None,
     "longitude": float(os.getenv("LONGITUDE")) if os.getenv("LONGITUDE") else None,
     "max_distance": int(os.getenv("MAX_DISTANCE")) if os.getenv("MAX_DISTANCE") else None,
-    "condition": os.getenv("CONDITION"),
+    "condition": os.getenv("CONDITION", None),
     "title_exclude": to_list("TITLE_EXCLUDE"),
     "description_exclude": to_list("DESCRIPTION_EXCLUDE"),
     "title_must_include": to_list("TITLE_MUST_INCLUDE"),
     "description_must_include": to_list("DESCRIPTION_MUST_INCLUDE"),
-    "title_first_word_include": os.getenv("TITLE_FIRST_WORD_INCLUDE")
+    "title_first_word_include": os.getenv("TITLE_FIRST_WORD_INCLUDE", None)
 }
 
-# Limpiar valores Nulos
-args_data = {k: v for k, v in args_data.items() if v is not None}
-
-# IMPORTANTE: El bot espera una LISTA de búsquedas, no una búsqueda sola
+# IMPORTANTE: NO eliminamos los None. El bot necesita que las llaves existan.
+# json.dump convertirá los None de Python en null de JSON automáticamente.
 args_list = [args_data]
 
 with open("args.json", "w") as f:
