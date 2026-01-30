@@ -10,7 +10,7 @@ config_data = {
 with open("config.yaml", "w") as f:
     yaml.dump(config_data, f)
 
-# 2. Función para manejar listas desde entorno
+# 2. Función para manejar listas
 def to_list(env_var):
     val = os.getenv(env_var)
     if not val or val.strip() == "": return []
@@ -20,28 +20,27 @@ def to_list(env_var):
     except:
         return [val]
 
-# 3. Generar args.json con TODAS las llaves que el bot espera
-# Si la variable de entorno no existe, se pone un valor por defecto compatible
+# 3. Generar args.json con valores compatibles con la URL de Wallapop
+# Si no hay valor, usamos "" (cadena vacía) para que en la URL no aparezca "None"
 args_data = {
     "search_query": os.getenv("SEARCH_QUERY", "laptop"),
     "min_price": int(os.getenv("MIN_PRICE", "0")),
     "max_price": int(os.getenv("MAX_PRICE", "999999")),
-    "latitude": float(os.getenv("LATITUDE")) if os.getenv("LATITUDE") else None,
-    "longitude": float(os.getenv("LONGITUDE")) if os.getenv("LONGITUDE") else None,
-    "max_distance": int(os.getenv("MAX_DISTANCE")) if os.getenv("MAX_DISTANCE") else None,
-    "condition": os.getenv("CONDITION", None),
+    "latitude": float(os.getenv("LATITUDE")) if os.getenv("LATITUDE") else 40.4167,
+    "longitude": float(os.getenv("LONGITUDE")) if os.getenv("LONGITUDE") else -3.7033,
+    "max_distance": int(os.getenv("MAX_DISTANCE")) if os.getenv("MAX_DISTANCE") else 0,
+    "condition": os.getenv("CONDITION", ""), # "" en lugar de None
     "title_exclude": to_list("TITLE_EXCLUDE"),
     "description_exclude": to_list("DESCRIPTION_EXCLUDE"),
     "title_must_include": to_list("TITLE_MUST_INCLUDE"),
     "description_must_include": to_list("DESCRIPTION_MUST_INCLUDE"),
-    "title_first_word_include": os.getenv("TITLE_FIRST_WORD_INCLUDE", None),
-    "title_first_word_exclude": os.getenv("TITLE_FIRST_WORD_EXCLUDE", None) # Esta era la que faltaba
+    "title_first_word_include": os.getenv("TITLE_FIRST_WORD_INCLUDE", ""), # "" en lugar de None
+    "title_first_word_exclude": os.getenv("TITLE_FIRST_WORD_EXCLUDE", "")  # "" en lugar de None
 }
 
-# El bot espera una lista de objetos
 args_list = [args_data]
 
 with open("args.json", "w") as f:
     json.dump(args_list, f, indent=4)
 
-print("Configuraciones generadas correctamente con todos los campos requeridos.")
+print("Configuraciones generadas correctamente. Valores nulos convertidos a cadenas vacías para compatibilidad.")
