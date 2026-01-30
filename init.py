@@ -2,10 +2,10 @@ import os
 import yaml
 import json
 
-# 1. Generar config.yaml
+# 1. Generar config.yaml (Corregido a minúsculas para el bot)
 config_data = {
-    "TELEGRAM_CHANNEL_ID": os.getenv("TELEGRAM_CHANNEL_ID", ""),
-    "TELEGRAM_TOKEN": os.getenv("TELEGRAM_TOKEN", "")
+    "telegram_channel_id": os.getenv("TELEGRAM_CHANNEL_ID", ""),
+    "telegram_token": os.getenv("TELEGRAM_TOKEN", "")
 }
 with open("config.yaml", "w") as f:
     yaml.dump(config_data, f)
@@ -20,14 +20,13 @@ def to_list(env_var):
     except:
         return [val]
 
-# 3. Generar args.json (Siguiendo tu ejemplo exitoso)
-# Usamos strings para lat/long y precios como en tu prueba manual
+# 3. Generar args.json (Siguiendo tu modelo exitoso)
 args_data = {
     "search_query": os.getenv("SEARCH_QUERY", "laptop"),
     "latitude": os.getenv("LATITUDE", "40.4167"),
     "longitude": os.getenv("LONGITUDE", "-3.7033"),
     "max_distance": os.getenv("MAX_DISTANCE", "0"),
-    "condition": os.getenv("CONDITION", "all"), # "all" hace que el bot lo ignore en la URL
+    "condition": os.getenv("CONDITION", "all"),
     "min_price": os.getenv("MIN_PRICE", "0"),
     "max_price": os.getenv("MAX_PRICE", "9999"),
     "title_exclude": to_list("TITLE_EXCLUDE"),
@@ -38,8 +37,7 @@ args_data = {
     "title_first_word_include": os.getenv("TITLE_FIRST_WORD_INCLUDE", None)
 }
 
-# Guardamos como una lista de objetos
 with open("args.json", "w") as f:
     json.dump([args_data], f, indent=4)
 
-print("✅ Configuración generada siguiendo el modelo exitoso.")
+print("✅ Configuración generada (Telegram en minúsculas + Args modo manual).")
