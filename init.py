@@ -19,6 +19,7 @@ def to_list(env_var):
     except:
         return [val]
 
+# Generamos args.json asegurando tipos correctos
 args_data = {
     "search_query": os.getenv("SEARCH_QUERY", "laptop"),
     "min_price": int(os.getenv("MIN_PRICE", "0")),
@@ -40,26 +41,37 @@ with open("args.json", "w") as f:
 
 print("✅ Archivos de configuración generados.")
 
-# --- 2. PARCHE QUIRÚRGICO DE CÓDIGO (Evita el Error 400) ---
+# --- 2. PARCHE QUIRÚRGICO MEJORADO ---
 try:
     worker_path = "managers/worker.py"
     with open(worker_path, "r") as f:
         content = f.read()
 
-    # Buscamos la línea de la URL que da problemas
-    old_url_part = '&language=es_ES&distance_in_km={item.max_distance}&condition={item.condition}'
+    # Parche para la CONDICIÓN: Si es None o vacío, no se envía el parámetro
+    # Buscamos la parte final de la f-string y la hacemos condicional
+    bad_cond = '&condition={item.condition}"'
+    good_cond = '{"&condition=" + str(item.condition) if item.condition and str(item.condition) != "None" else ""}"'
     
-    # La sustituimos por una lógica que no envía 'condition' si es None y asegura distancia
-    new_url_part = '&language=es_ES&distance_in_km={item.max_distance if item.max_distance else 2000}"'
-    new_url_part += ' + (f"&condition={item.condition}" if item.condition and str(item.condition) != "None" else "") + f"'
+    # Parche para la DISTANCIA: Si es 0 o None, ponemos 2000 (España)
+    bad_dist = 'distance_in_km={item.max_distance}'
+    good_dist = 'distance_in_km={item.max_distance if item.max_distance else 2000}'
 
-    # Aplicamos el cambio si no se ha aplicado ya
-    if old_url_part in content:
-        content = content.replace(old_url_part, new_url_part)
+    if bad_cond in content or bad_dist in content:
+        content = content.replace(bad_cond, good_cond)
+        content = content.replace(bad_dist, good_dist)
         with open(worker_path, "w") as f:
             f.write(content)
-        print("✅ Parche de URL aplicado con éxito.")
+        print("✅ Código del bot parcheado correctamente (URL optimizada).")
     else:
-        print("⚠️ El parche ya estaba aplicado o no se encontró la línea.")
+        # Si fallan los anteriores, hacemos un reemplazo directo de la línea de la URL
+        print("⚠️ Buscando patrón alternativo...")
+        new_content = content.replace('&condition={item.condition}', '{"&condition=" + str(item.condition) if item.condition and str(item.condition) != "None" else ""}')
+        if new_content != content:
+            with open(worker_path, "w") as f:
+                f.write(new_content)
+            print("✅ Parche aplicado mediante patrón alternativo.")
+        else:
+            print("❌ No se pudo encontrar la línea de la URL para parchear.")
+
 except Exception as e:
-    print(f"❌ Error aplicando el parche: {e}")
+    print(f"❌ Error crítico en el parcheo: {e}")
