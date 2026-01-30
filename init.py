@@ -1,9 +1,8 @@
 import os
 import yaml
 import json
-import re
 
-# --- 1. GENERAR CONFIGURACIONES ---
+# 1. Generar config.yaml
 config_data = {
     "TELEGRAM_CHANNEL_ID": os.getenv("TELEGRAM_CHANNEL_ID", ""),
     "TELEGRAM_TOKEN": os.getenv("TELEGRAM_TOKEN", "")
@@ -11,6 +10,7 @@ config_data = {
 with open("config.yaml", "w") as f:
     yaml.dump(config_data, f)
 
+# 2. Función para manejar listas
 def to_list(env_var):
     val = os.getenv(env_var)
     if not val or val.strip() == "": return []
@@ -20,59 +20,26 @@ def to_list(env_var):
     except:
         return [val]
 
+# 3. Generar args.json (Siguiendo tu ejemplo exitoso)
+# Usamos strings para lat/long y precios como en tu prueba manual
 args_data = {
     "search_query": os.getenv("SEARCH_QUERY", "laptop"),
-    "min_price": int(os.getenv("MIN_PRICE", "0")),
-    "max_price": int(os.getenv("MAX_PRICE", "999999")),
-    "latitude": float(os.getenv("LATITUDE")) if os.getenv("LATITUDE") else 40.4167,
-    "longitude": float(os.getenv("LONGITUDE")) if os.getenv("LONGITUDE") else -3.7033,
-    "max_distance": int(os.getenv("MAX_DISTANCE")) if os.getenv("MAX_DISTANCE") else 2000,
-    "condition": os.getenv("CONDITION", None),
+    "latitude": os.getenv("LATITUDE", "40.4167"),
+    "longitude": os.getenv("LONGITUDE", "-3.7033"),
+    "max_distance": os.getenv("MAX_DISTANCE", "0"),
+    "condition": os.getenv("CONDITION", "all"), # "all" hace que el bot lo ignore en la URL
+    "min_price": os.getenv("MIN_PRICE", "0"),
+    "max_price": os.getenv("MAX_PRICE", "9999"),
     "title_exclude": to_list("TITLE_EXCLUDE"),
     "description_exclude": to_list("DESCRIPTION_EXCLUDE"),
     "title_must_include": to_list("TITLE_MUST_INCLUDE"),
     "description_must_include": to_list("DESCRIPTION_MUST_INCLUDE"),
-    "title_first_word_include": os.getenv("TITLE_FIRST_WORD_INCLUDE", None),
-    "title_first_word_exclude": os.getenv("TITLE_FIRST_WORD_EXCLUDE", None)
+    "title_first_word_exclude": to_list("TITLE_FIRST_WORD_EXCLUDE"),
+    "title_first_word_include": os.getenv("TITLE_FIRST_WORD_INCLUDE", None)
 }
 
+# Guardamos como una lista de objetos
 with open("args.json", "w") as f:
     json.dump([args_data], f, indent=4)
 
-print("✅ Archivos de configuración generados.")
-
-# --- 2. PARCHE QUIRÚRGICO MEDIANTE REGEX (Solución Error 400) ---
-try:
-    worker_path = "managers/worker.py"
-    with open(worker_path, "r") as f:
-        content = f.read()
-
-    # 1. Parcheamos la DISTANCIA (Aseguramos que no sea 0 o None)
-    # Busca 'distance_in_km={...}' y lo hace robusto
-    content = re.sub(
-        r'distance_in_km=\{item\.max_distance\}', 
-        'distance_in_km={item.max_distance if item.max_distance else 2000}', 
-        content
-    )
-
-    # 2. Parcheamos la CONDICIÓN (Solo se añade si existe y no es "None")
-    # Busca '&condition={item.condition}' y lo convierte en un bloque condicional
-    # Manejamos posibles variantes de comillas al final de la f-string
-    pattern = r'&condition=\{item\.condition\}'
-    replacement = '{"&condition=" + str(item.condition) if item.condition and str(item.condition) != "None" else ""}'
-    
-    if re.search(pattern, content):
-        content = re.sub(pattern, replacement, content)
-        with open(worker_path, "w") as f:
-            f.write(content)
-        print("✅ Bot parcheado con éxito mediante Regex.")
-    else:
-        # Intento desesperado: si la URL está construida de otra forma, forzamos el reemplazo
-        # de cualquier mención a la condición problemática
-        content = content.replace('&condition={item.condition}', replacement)
-        with open(worker_path, "w") as f:
-            f.write(content)
-        print("✅ Parche aplicado mediante reemplazo directo de cadena.")
-
-except Exception as e:
-    print(f"❌ Error crítico aplicando el parche: {e}")
+print("✅ Configuración generada siguiendo el modelo exitoso.")
