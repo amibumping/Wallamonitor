@@ -1,6 +1,6 @@
   All credits go to @danielhuici for making Wallamonitor, I just added Docker support for amd64/arm64 platforms.
 
-  For info on how Wallamonitor works, go to [https://github.com/danielhuici](https://github.com/danielhuici/Wallamonitor)]
+  For info on how Wallamonitor works, go to [https://github.com/danielhuici](https://github.com/danielhuici/Wallamonitor)
   
   ## Configuration 🛠️
 
@@ -48,8 +48,6 @@ services:
   The bot will monitor Wallapop periodically (default 15s) and send notifications to your specified Telegram channel whenever new items match your criteria.
 
   ---
-
-  Feel free to reach out if you have any issues with Wallamonitor or have suggestions to improve it. Happy shopping! 🛒📲
 
 
 
