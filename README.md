@@ -1,26 +1,7 @@
+  All credits go to @danielhuici for making Wallamonitor, I just added Docker support for amd64/arm64 platforms.
 
-  # Wallamonitor 📲 
-  **Automate your Wallapop searches and get notified on Telegram when new items are listed!**  
-  This bot periodically searches Wallapop for new items based on your specific parameters and sends real-time notifications to your designated Telegram channel.
-
-  ## Table of Contents
-  - [Setup](#setup-)
-  - [Configuration](#configuration-)
-  - [Usage](#usage-)
-
-  ## Setup 🔧
-
-  1. Install required packages:
-     ```bash
-     pip3 install -r requirements.txt
-     ```
-
-  2. Configure your Telegram details in `config.yaml`:
-     ```yaml
-     TELEGRAM_CHANNEL_ID: "@Your_Telegram_Channel_ID"
-     TELEGRAM_TOKEN: "Your Telegram Token"
-     ```
-
+  For info on how Wallamonitor works, go to [https://github.com/danielhuici](https://github.com/danielhuici/Wallamonitor)]
+  
   ## Configuration 🛠️
 
   Docker compose example:
@@ -32,22 +13,22 @@ services:
     restart: unless-stopped
     environment:
       - TZ=Europe/Madrid
-      - TELEGRAM_CHANNEL_ID="telegram_channel_id"
-      - TELEGRAM_TOKEN=telegram_token
-      - SEARCH_QUERY=rockshox super deluxe ultimate
-      - MIN_PRICE=150
-      - MAX_PRICE=400
+      - TELEGRAM_CHANNEL_ID='-channel_id'
+      - TELEGRAM_TOKEN='telegram_token'      
+      - SEARCH_QUERY=search
+      - MIN_PRICE=100
+      - MAX_PRICE=350
       - LATITUDE=40.3908
       - LONGITUDE=-3.6598
       - MAX_DISTANCE=0
       - CONDITION=all      
     volumes:
+      # Ahora que database.db es un archivo real en el host, funcionará:
       - .data/database.db:/app/database.db
 ```
-  Create an `args.json` file with your search parameters. This file tells Wallamonitor what items you’re looking for, such as price range, condition, and other criteria. You can set multiple search configurations within this file.
-  
 
   ### Parameters:
+  
   | Parameter                  | Description                                                                                               | Example                  | Mandatory         |
   |----------------------------|-----------------------------------------------------------------------------------------------------------|--------------------------|-------------------|
   | `search_query`             | Main search term. Only items containing this phrase in their title will be found.                         | `"laptop"`               | **Yes**          |
@@ -63,21 +44,12 @@ services:
   | `description_must_include` | List of required words in the description. If none of these words appear, the item will be excluded.      | `["working"]`            | No               |
   | `title_first_word_include` | Notify only if the first word of the title matches the specified word.                                    | `"New"`                  | No               |
 
-Check out [args.json](./args.json) for an example
-
-  ## Usage 🚀
-
-  1. Ensure your `args.json` file is filled out with the parameters you’d like Wallamonitor to use for its searches.
-  2. Run Wallamonitor:
-
-     ```bash
-     python3 wallamonitor.py
-     ```
 
   The bot will monitor Wallapop periodically (default 15s) and send notifications to your specified Telegram channel whenever new items match your criteria.
 
   ---
 
   Feel free to reach out if you have any issues with Wallamonitor or have suggestions to improve it. Happy shopping! 🛒📲
+
 
 
