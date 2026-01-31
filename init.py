@@ -2,15 +2,25 @@ import os
 import yaml
 import json
 
-# 1. Generar config.yaml (Claves EXACTAS requeridas por el bot)
-config_data = {
-    "telegram_token": os.getenv("TELEGRAM_TOKEN", ""),
-    "telegram_channel": os.getenv("TELEGRAM_CHANNEL_ID", "") # Cambiado de _id a seco
-}
-with open("config.yaml", "w") as f:
-    yaml.dump(config_data, f)
+# --- 1. GENERAR CONFIG.YAML ---
+# Limpiamos posibles comillas accidentales de las variables de entorno
+token = os.getenv("TELEGRAM_TOKEN", "").strip().replace('"', '').replace("'", "")
+channel = os.getenv("TELEGRAM_CHANNEL_ID", "").strip().replace('"', '').replace("'", "")
 
-# 2. Función para manejar listas
+config_data = {
+    "telegram_token": str(token),
+    "telegram_channel": str(channel)
+}
+
+with open("config.yaml", "w") as f:
+    # Forzamos que se escriba como un string simple para evitar problemas de formato YAML
+    yaml.dump(config_data, f, default_flow_style=False, allow_unicode=True)
+
+print(f"✅ Configuración de Telegram generada.")
+print(f"DEBUG: Token configurado (longitud): {len(token)}")
+print(f"DEBUG: Canal configurado: {channel}")
+
+# --- 2. GENERAR ARGS.JSON ---
 def to_list(env_var):
     val = os.getenv(env_var)
     if not val or val.strip() == "": return []
@@ -20,7 +30,6 @@ def to_list(env_var):
     except:
         return [val]
 
-# 3. Generar args.json (Configuración modo manual exitoso)
 args_data = {
     "search_query": os.getenv("SEARCH_QUERY", "laptop"),
     "latitude": os.getenv("LATITUDE", "40.4167"),
@@ -39,5 +48,3 @@ args_data = {
 
 with open("args.json", "w") as f:
     json.dump([args_data], f, indent=4)
-
-print("✅ Configuración generada con claves de Telegram corregidas.")
