@@ -15,17 +15,12 @@ services:
       - TZ=Europe/Madrid
       - TELEGRAM_CHANNEL_ID='-channel_id'
       - TELEGRAM_TOKEN='telegram_token'      
-      - SEARCH_QUERY=search
-      - MIN_PRICE=100
-      - MAX_PRICE=350
-      - LATITUDE=40.3908
-      - LONGITUDE=-3.6598
-      - MAX_DISTANCE=0
-      - CONDITION=all      
+     
     volumes:
-      # Ahora que database.db es un archivo real en el host, funcionará:
-      - .data/database.db:/app/database.db
+      - /mnt/ssd/wallamonitor/database.db:/app/database.db
+      - /mnt/ssd/wallamonitor/args.json:/app/args.json
 ```
+
 
   ### Parameters:
   
@@ -48,6 +43,7 @@ services:
   The bot will monitor Wallapop periodically (default 15s) and send notifications to your specified Telegram channel whenever new items match your criteria.
 
   ---
+
 
 
 
