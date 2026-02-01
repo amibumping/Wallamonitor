@@ -20,6 +20,7 @@ services:
       - /mnt/ssd/wallamonitor/database.db:/app/database.db
       - /mnt/ssd/wallamonitor/args.json:/app/args.json
 ```
+Check out [args.json](./args.json) for an example
 
 
   ### Parameters:
@@ -43,6 +44,7 @@ services:
   The bot will monitor Wallapop periodically (default 15s) and send notifications to your specified Telegram channel whenever new items match your criteria.
 
   ---
+
 
 
 
