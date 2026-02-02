@@ -3,7 +3,7 @@ import yaml
 import json
 import re
 
-print("--- 🛠️ CONFIGURANDO PERSISTENCIA AVANZADA ---")
+print("--- 🛠️ CONFIGURANDO PERSISTENCIA (VERSIÓN ROBUSTA) ---")
 
 # 1. Generar config.yaml
 token = os.getenv("TELEGRAM_TOKEN", "").strip().replace('"', '').replace("'", "")
@@ -19,17 +19,19 @@ if os.path.exists(worker_path):
         content = f.read()
     
     if "def is_visto" not in content:
-        print("🔧 Inyectando lógica de persistencia en worker.py...")
+        print("🔧 Inyectando lógica en worker.py...")
         
-        # Añadimos imports necesarios
+        # Añadimos imports al inicio
         content = "import os\nimport time\n" + content
         
-        # Inyectamos métodos de ayuda en la clase Worker
-        persistence_methods = """
+        # Inyectamos métodos de persistencia justo después de la definición de la clase
+        persistence_code = """
     def is_visto(self, item_id):
         if not os.path.exists('vistos.txt'): return False
-        with open('vistos.txt', 'r') as f:
-            return str(item_id) in f.read()
+        try:
+            with open('vistos.txt', 'r') as f:
+                return str(item_id) in f.read()
+        except: return False
 
     def save_visto(self, item_id):
         try:
@@ -37,29 +39,36 @@ if os.path.exists(worker_path):
                 f.write(str(item_id) + '\\n')
         except: pass
 """
-        content = re.sub(r"(class Worker:.*?\n)", r"\1" + persistence_methods, content, count=1, flags=re.S)
+        content = re.sub(r"(class Worker.*?:\n)", r"\1" + persistence_code, content, count=1)
+
+        # BUSCADOR FLEXIBLE: Buscamos cualquier línea que contenga 'send_message('
+        # y la reemplazamos por el bloque seguro.
+        lines = content.splitlines()
+        new_lines = []
+        for line in lines:
+            if "send_message(" in line and "def" not in line:
+                indent = line[:line.find("self")]
+                # Extraemos el nombre de la variable (ej: article o item)
+                var_match = re.search(r"send_message\((.*?)\)", line)
+                if var_match:
+                    var_name = var_match.group(1)
+                    new_lines.append(f"{indent}if not self.is_visto({var_name}.id):")
+                    new_lines.append(f"{indent}    try:")
+                    new_lines.append(f"{indent}        time.sleep(1.5)")
+                    new_lines.append(f"{indent}        {line.strip()}")
+                    new_lines.append(f"{indent}        self.save_visto({var_name}.id)")
+                    new_lines.append(f"{indent}    except Exception as e:")
+                    new_lines.append(f"{indent}        print(f'⚠️ Error en envío: {{e}}')")
+                else:
+                    new_lines.append(line)
+            else:
+                new_lines.append(line)
         
-        # Parcheamos el envío de mensajes con seguridad (Try/Except)
-        # Buscamos la llamada a send_message y la envolvemos
-        pattern = r"(\s+)(self\.telegram_manager\.send_message\((.*?)\))"
-        replacement = r"""
-\1if not self.is_visto(\3.id):
-\1    try:
-\1        time.sleep(1.5)
-\1        \2
-\1        self.save_visto(\3.id)
-\1    except Exception as e:
-\1        print(f"⚠️ Error enviando \3.id: {e}")
-"""
-        new_content = re.sub(pattern, replacement, content)
-        
-        if new_content != content:
-            with open(worker_path, "w") as f:
-                f.write(new_content)
-            print("✅ worker.py parcheado con éxito.")
-        else:
-            print("❌ No se encontró la línea de envío de mensajes.")
+        content = "\n".join(new_lines)
+        with open(worker_path, "w") as f:
+            f.write(content)
+        print("✅ worker.py parcheado con éxito (Buscador Flexible).")
 else:
     print("❌ No se encontró managers/worker.py")
 
-print("--- 🏁 CONFIGURACIÓN FINALIZADA ---")
+print("--- 🏁 FIN DE CONFIGURACIÓN ---")
