@@ -17,7 +17,6 @@ services:
       - TELEGRAM_TOKEN='telegram_token'      
      
     volumes:
-      - /mnt/ssd/wallamonitor/database.db:/app/database.db
       - /mnt/ssd/wallamonitor/args.json:/app/args.json
 ```
 Check out [args.json](./args.json) for an example
@@ -44,6 +43,7 @@ Check out [args.json](./args.json) for an example
   The bot will monitor Wallapop periodically (default 15s) and send notifications to your specified Telegram channel whenever new items match your criteria.
 
   ---
+
 
 
 
