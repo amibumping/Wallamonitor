@@ -2,28 +2,15 @@ import os
 import yaml
 import json
 
-# --- 1. GENERAR CONFIG.YAML (Telegram) ---
-# Limpiamos posibles comillas accidentales
+# --- 1. GENERAR CONFIG.YAML ---
 token = os.getenv("TELEGRAM_TOKEN", "").strip().replace('"', '').replace("'", "")
 channel = os.getenv("TELEGRAM_CHANNEL_ID", "").strip().replace('"', '').replace("'", "")
-
-config_data = {
-    "telegram_token": str(token),
-    "telegram_channel": str(channel)
-}
-
+config_data = {"telegram_token": str(token), "telegram_channel": str(channel)}
 with open("config.yaml", "w") as f:
     yaml.dump(config_data, f, default_flow_style=False, allow_unicode=True)
 
-print(f"✅ Configuración de Telegram generada.")
-
-# --- 2. GESTIONAR ARGS.JSON (Búsquedas) ---
-# Verificamos si ya existe un archivo args.json (montado por volumen)
-if os.path.exists("args.json") and os.path.getsize("args.json") > 10:
-    print("ℹ️ Modo Multibúsqueda: Usando archivo args.json externo montado en volumen.")
-else:
-    print("ℹ️ Modo Producto Único: Generando args.json desde variables de entorno.")
-    
+# --- 2. GENERAR ARGS.JSON ---
+if not os.path.exists("args.json") or os.path.getsize("args.json") < 10:
     def to_list(env_var):
         val = os.getenv(env_var)
         if not val or val.strip() == "": return []
@@ -47,6 +34,22 @@ else:
         "title_first_word_exclude": to_list("TITLE_FIRST_WORD_EXCLUDE"),
         "title_first_word_include": os.getenv("TITLE_FIRST_WORD_INCLUDE", None)
     }]
-    
     with open("args.json", "w") as f:
         json.dump(args_data, f, indent=4)
+
+# --- 3. PARCHE DE BASE DE DATOS (FORZAR RUTA ABSOLUTA) ---
+try:
+    db_script_path = "datalayer/database.py"
+    with open(db_script_path, "r") as f:
+        content = f.read()
+    
+    # Forzamos al bot a usar siempre /app/database.db
+    if "sqlite3.connect('database.db')" in content:
+        content = content.replace("sqlite3.connect('database.db')", "sqlite3.connect('/app/database.db')")
+        with open(db_script_path, "w") as f:
+            f.write(content)
+        print("✅ Parche de base de datos aplicado (Ruta absoluta: /app/database.db)")
+except Exception as e:
+    print(f"❌ Error aplicando parche de DB: {e}")
+
+print("✅ Todo listo.")
