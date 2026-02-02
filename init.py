@@ -1,8 +1,9 @@
 import os
 import yaml
 import json
+import re
 
-# --- 1. GENERAR CONFIG.YAML ---
+# --- 1. GENERAR CONFIGURACIONES ---
 token = os.getenv("TELEGRAM_TOKEN", "").strip().replace('"', '').replace("'", "")
 channel = os.getenv("TELEGRAM_CHANNEL_ID", "").strip().replace('"', '').replace("'", "")
 config_data = {"telegram_token": str(token), "telegram_channel": str(channel)}
@@ -18,7 +19,6 @@ if not os.path.exists("args.json") or os.path.getsize("args.json") < 10:
             parsed = json.loads(val)
             return parsed if isinstance(parsed, list) else [parsed]
         except: return [val]
-
     args_data = [{
         "search_query": os.getenv("SEARCH_QUERY", "laptop"),
         "latitude": os.getenv("LATITUDE", "40.4167"),
@@ -37,19 +37,30 @@ if not os.path.exists("args.json") or os.path.getsize("args.json") < 10:
     with open("args.json", "w") as f:
         json.dump(args_data, f, indent=4)
 
-# --- 3. PARCHE DE BASE DE DATOS (FORZAR RUTA ABSOLUTA) ---
-try:
-    db_script_path = "datalayer/database.py"
-    with open(db_script_path, "r") as f:
-        content = f.read()
-    
-    # Forzamos al bot a usar siempre /app/database.db
-    if "sqlite3.connect('database.db')" in content:
-        content = content.replace("sqlite3.connect('database.db')", "sqlite3.connect('/app/database.db')")
-        with open(db_script_path, "w") as f:
-            f.write(content)
-        print("✅ Parche de base de datos aplicado (Ruta absoluta: /app/database.db)")
-except Exception as e:
-    print(f"❌ Error aplicando parche de DB: {e}")
+# --- 3. PARCHE INTELIGENTE DE RUTA DE BASE DE DATOS ---
+# Buscamos en todas las carpetas el archivo que configure sqlite3
+found_db_file = False
+for root, dirs, files in os.walk("."):
+    for file in files:
+        if file.endswith(".py"):
+            full_path = os.path.join(root, file)
+            try:
+                with open(full_path, "r") as f:
+                    content = f.read()
+                
+                # Buscamos la línea que conecta a la base de datos
+                if "sqlite3.connect(" in content:
+                    # Forzamos una ruta única y absoluta en el contenedor
+                    new_content = re.sub(r"sqlite3\.connect\(.*?\)", "sqlite3.connect('/app/wallapop_data.db')", content)
+                    if new_content != content:
+                        with open(full_path, "w") as f:
+                            f.write(new_content)
+                        print(f"✅ Parche aplicado en: {full_path} -> Ruta: /app/wallapop_data.db")
+                        found_db_file = True
+            except:
+                continue
+
+if not found_db_file:
+    print("⚠️ No se encontró el archivo de conexión SQLite para parchear.")
 
 print("✅ Todo listo.")
