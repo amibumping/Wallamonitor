@@ -1,8 +1,9 @@
 import os
 import yaml
 import json
+import re
 
-print("--- 🛠️ CONFIGURANDO PERSISTENCIA Y TELEGRAM ---")
+print("--- 🛠️ CONFIGURANDO PERSISTENCIA AVANZADA ---")
 
 # 1. Generar config.yaml
 token = os.getenv("TELEGRAM_TOKEN", "").strip().replace('"', '').replace("'", "")
@@ -11,47 +12,53 @@ config_data = {"telegram_token": str(token), "telegram_channel": str(channel)}
 with open("config.yaml", "w") as f:
     yaml.dump(config_data, f, default_flow_style=False)
 
-# 2. Generar args.json si no existe
-if not os.path.exists("args.json") or os.path.getsize("args.json") < 10:
-    # (Mantenemos la lógica de generación que ya teníamos)
-    args_data = [{"search_query": os.getenv("SEARCH_QUERY", "laptop"), "latitude": os.getenv("LATITUDE", "40.4167"), "longitude": os.getenv("LONGITUDE", "-3.7033"), "max_distance": os.getenv("MAX_DISTANCE", "0"), "condition": os.getenv("CONDITION", "all"), "min_price": os.getenv("MIN_PRICE", "0"), "max_price": os.getenv("MAX_PRICE", "9999")}]
-    with open("args.json", "w") as f:
-        json.dump(args_data, f, indent=4)
-
-# 3. INYECTAR PERSISTENCIA EN EL BOT (Parche de Worker.py)
-# Esto hará que el bot lea/escriba en 'vistos.txt'
+# 2. Parchear Worker.py
 worker_path = "managers/worker.py"
 if os.path.exists(worker_path):
     with open(worker_path, "r") as f:
         content = f.read()
     
-    # Solo parcheamos si no está ya parcheado
-    if "vistos.txt" not in content:
-        # Añadimos la lógica de guardado
-        insertion = """
+    if "def is_visto" not in content:
+        print("🔧 Inyectando lógica de persistencia en worker.py...")
+        
+        # Añadimos imports necesarios
+        content = "import os\nimport time\n" + content
+        
+        # Inyectamos métodos de ayuda en la clase Worker
+        persistence_methods = """
     def is_visto(self, item_id):
         if not os.path.exists('vistos.txt'): return False
         with open('vistos.txt', 'r') as f:
-            return item_id in f.read()
+            return str(item_id) in f.read()
 
     def save_visto(self, item_id):
-        with open('vistos.txt', 'a') as f:
-            f.write(item_id + '\\n')
+        try:
+            with open('vistos.txt', 'a') as f:
+                f.write(str(item_id) + '\\n')
+        except: pass
 """
-        # Insertamos el código y modificamos la lógica de envío
-        content = "import os\nimport time\n" + content
-        content = content.replace("class Worker:", "class Worker:" + insertion)
+        content = re.sub(r"(class Worker:.*?\n)", r"\1" + persistence_methods, content, count=1, flags=re.S)
         
-        # Modificamos el bucle que envía los anuncios para que compruebe si ya se envió
-        # Buscamos donde el bot decide enviar el mensaje (suele ser un if o for)
-        content = content.replace(
-            "self.telegram_manager.send_message(article)",
-            "if not self.is_visto(article.id):\n                time.sleep(1)\n                self.telegram_manager.send_message(article)\n                self.save_visto(article.id)"
-        )
+        # Parcheamos el envío de mensajes con seguridad (Try/Except)
+        # Buscamos la llamada a send_message y la envolvemos
+        pattern = r"(\s+)(self\.telegram_manager\.send_message\((.*?)\))"
+        replacement = r"""
+\1if not self.is_visto(\3.id):
+\1    try:
+\1        time.sleep(1.5)
+\1        \2
+\1        self.save_visto(\3.id)
+\1    except Exception as e:
+\1        print(f"⚠️ Error enviando \3.id: {e}")
+"""
+        new_content = re.sub(pattern, replacement, content)
         
-        with open(worker_path, "w") as f:
-            f.write(content)
-        print("✅ Persistencia inyectada con éxito en worker.py")
+        if new_content != content:
+            with open(worker_path, "w") as f:
+                f.write(new_content)
+            print("✅ worker.py parcheado con éxito.")
+        else:
+            print("❌ No se encontró la línea de envío de mensajes.")
 else:
     print("❌ No se encontró managers/worker.py")
 
