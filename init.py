@@ -1,64 +1,58 @@
 import os
 import yaml
 import json
-import re
-import time
 
-print("--- 🛠️ INICIANDO DIAGNÓSTICO Y CONFIGURACIÓN ---")
+print("--- 🛠️ CONFIGURANDO PERSISTENCIA Y TELEGRAM ---")
 
-# 1. Mostrar qué archivos ve el contenedor (Para debug)
-print("Archivos en el directorio actual:")
-for root, dirs, files in os.walk('.'):
-    level = root.replace('.', '').count(os.sep)
-    indent = ' ' * 4 * (level)
-    print(f"{indent}[{os.path.basename(root)}/]")
-    subindent = ' ' * 4 * (level + 1)
-    for f in files:
-        if f.endswith('.py') or f.endswith('.db'):
-            print(f"{subindent}{f}")
-
-# 2. Generar config.yaml
+# 1. Generar config.yaml
 token = os.getenv("TELEGRAM_TOKEN", "").strip().replace('"', '').replace("'", "")
 channel = os.getenv("TELEGRAM_CHANNEL_ID", "").strip().replace('"', '').replace("'", "")
 config_data = {"telegram_token": str(token), "telegram_channel": str(channel)}
 with open("config.yaml", "w") as f:
     yaml.dump(config_data, f, default_flow_style=False)
 
-# 3. Parche de Código: Base de Datos y Flood Control
-found_db = False
-for root, dirs, files in os.walk("."):
-    for file in files:
-        if file.endswith(".py"):
-            path = os.path.join(root, file)
-            try:
-                with open(path, "r") as f:
-                    content = f.read()
-                
-                original_content = content
-                
-                # A. Parche de Base de Datos (Ruta absoluta)
-                # Buscamos sqlite3.connect con cualquier variante de espacios/comillas
-                content = re.sub(r"sqlite3\.connect\(.*?\)", "sqlite3.connect('/app/database.db')", content)
-                
-                # B. Parche de Flood Control (Evitar bloqueo de Telegram)
-                # Añadimos un pequeño delay de 1 seg entre mensajes para que no colapse
-                if "self.telegram_manager.send_message" in content:
-                    content = content.replace(
-                        "self.telegram_manager.send_message",
-                        "time.sleep(1); self.telegram_manager.send_message"
-                    )
-                    if "import time" not in content:
-                        content = "import time\n" + content
+# 2. Generar args.json si no existe
+if not os.path.exists("args.json") or os.path.getsize("args.json") < 10:
+    # (Mantenemos la lógica de generación que ya teníamos)
+    args_data = [{"search_query": os.getenv("SEARCH_QUERY", "laptop"), "latitude": os.getenv("LATITUDE", "40.4167"), "longitude": os.getenv("LONGITUDE", "-3.7033"), "max_distance": os.getenv("MAX_DISTANCE", "0"), "condition": os.getenv("CONDITION", "all"), "min_price": os.getenv("MIN_PRICE", "0"), "max_price": os.getenv("MAX_PRICE", "9999")}]
+    with open("args.json", "w") as f:
+        json.dump(args_data, f, indent=4)
 
-                if content != original_content:
-                    with open(path, "w") as f:
-                        f.write(content)
-                    print(f"✅ Archivo parcheado: {path}")
-                    if "sqlite3" in original_content: found_db = True
-            except:
-                continue
+# 3. INYECTAR PERSISTENCIA EN EL BOT (Parche de Worker.py)
+# Esto hará que el bot lea/escriba en 'vistos.txt'
+worker_path = "managers/worker.py"
+if os.path.exists(worker_path):
+    with open(worker_path, "r") as f:
+        content = f.read()
+    
+    # Solo parcheamos si no está ya parcheado
+    if "vistos.txt" not in content:
+        # Añadimos la lógica de guardado
+        insertion = """
+    def is_visto(self, item_id):
+        if not os.path.exists('vistos.txt'): return False
+        with open('vistos.txt', 'r') as f:
+            return item_id in f.read()
 
-if not found_db:
-    print("⚠️ No se pudo parchear la conexión SQLite. Es posible que la ruta sea distinta.")
+    def save_visto(self, item_id):
+        with open('vistos.txt', 'a') as f:
+            f.write(item_id + '\\n')
+"""
+        # Insertamos el código y modificamos la lógica de envío
+        content = "import os\nimport time\n" + content
+        content = content.replace("class Worker:", "class Worker:" + insertion)
+        
+        # Modificamos el bucle que envía los anuncios para que compruebe si ya se envió
+        # Buscamos donde el bot decide enviar el mensaje (suele ser un if o for)
+        content = content.replace(
+            "self.telegram_manager.send_message(article)",
+            "if not self.is_visto(article.id):\n                time.sleep(1)\n                self.telegram_manager.send_message(article)\n                self.save_visto(article.id)"
+        )
+        
+        with open(worker_path, "w") as f:
+            f.write(content)
+        print("✅ Persistencia inyectada con éxito en worker.py")
+else:
+    print("❌ No se encontró managers/worker.py")
 
-print("--- 🏁 FIN DEL DIAGNÓSTICO ---")
+print("--- 🏁 CONFIGURACIÓN FINALIZADA ---")
