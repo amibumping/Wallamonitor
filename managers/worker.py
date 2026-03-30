@@ -29,6 +29,8 @@ class Worker:
             f"&min_sale_price={self._item_monitoring._min_price}" 
             f"&max_sale_price={self._item_monitoring._max_price}" 
             f"&language=es_ES"
+            f"&section_type=organic_search_results"
+            
         )
 
         if self._item_monitoring._max_distance != "0":
